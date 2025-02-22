@@ -2,6 +2,44 @@
 
 # Transactional Replication
 
+## Pénzügyi tranzakciós rendszer 💰
+
+Táblák: account, transaction, user, audit_log
+
+Lehetőségek:
+- Felhasználók közötti pénzátutalások.
+- Egyenleg frissítése valós időben replikációval.
+- Audit log replikálása, hogy minden tranzakció rögzítve legyen.
+
+## Funkciók és tranzakciók 🔄
+
+- Pénzutalás tranzakció
+  - Egy tranzakcióval frissíti a küldő és fogadó számlák egyenlegét.
+  - Minden sikeres tranzakció után létrehoz egy bejegyzést az `audit_log` táblában.
+- Valós idejű replikáció
+  - Az összes tranzakció automatikusan tükröződik egy másodlagos adatbázisban.
+  - Az audit napló is azonnal szinkronizálódik.
+- Tranzakciós védelem
+  - Rollback hiba esetén.
+  - Adatvesztés vagy duplikáció elkerülése.
+
+### Lépések 🚀
+
+1. Adatbázis séma megírása (DDL).
+2. Spring Boot beállítása tranzakciókezeléssel és MySQL replikációval.
+3. Tranzakciós szolgáltatások implementálása.
+4. Tesztek írása, hogy minden működjön.
+
+### SQL Command Classification 🗂️
+
+![img.png](src/main/resources/static/sql-command-classification.png)
+
+### Funkciók ✅
+
+- Minden tranzakcióhoz automatikusan létrejön egy audit bejegyzés.
+- Nyomon követhető, hogy ki és mikor hajtott végre egy adott műveletet.
+- Segít a hibák felderítésében és a biztonsági incidensek elemzésében.
+
 # Adatbázis Replikációs Módszerek
 
 A **snapshot replikáció** és a **transactional replikáció** két különböző típusú adatbázis-replikációs módszer, amelyek mindkettő arra szolgálnak, hogy az adatokat átvigyék egyik adatbázisból a másikba, de más-más módon és más céllal.
