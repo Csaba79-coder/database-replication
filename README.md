@@ -62,3 +62,5 @@ A transactional replikáció minden egyes tranzakciót másol át a forrás adat
 | **Kezelhetőség**       | Egyszerűbb, kevesebb beállítást igényel.        | Komplexebb beállítások, több erőforrást igényel.  |
 | **Előnyök**            | Egyszerűség, könnyű karbantartás.               | Valós idejű adat szinkronizálás, naprakész másolat. |
 | **Hátrányok**          | Nem valós idejű, időigényes, nem a leggyorsabb. | Erőforrás-igényes, bonyolultabb beállítás.       |
+
+![img.png](src/main/resources/static/pannon-logo.png)
