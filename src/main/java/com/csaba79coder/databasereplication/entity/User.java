@@ -2,10 +2,7 @@ package com.csaba79coder.databasereplication.entity;
 
 import com.csaba79coder.databasereplication.entity.base.Identifier;
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.io.Serializable;
 
