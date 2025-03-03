@@ -1,4 +1,4 @@
-package com.csaba79coder.databasereplication.persistence;
+package com.csaba79coder.databasereplication.persistence.master;
 
 import com.csaba79coder.databasereplication.entity.Account;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Repository
-public interface AccountRepository extends JpaRepository<Account, UUID> {
+public interface AccountMasterRepository extends JpaRepository<Account, UUID> {
 
     Optional<Account> findAccountByName(String name);
 }

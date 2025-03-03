@@ -1,5 +1,6 @@
 package com.csaba79coder.databasereplication.config;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
@@ -14,6 +15,7 @@ import java.util.Map;
 
 @Configuration
 @EnableConfigurationProperties
+@Slf4j
 public class DataSourceConfig {
 
     @Value("${spring.datasource.url}")
@@ -58,7 +60,9 @@ public class DataSourceConfig {
         AbstractRoutingDataSource routingDataSource = new AbstractRoutingDataSource() {
             @Override
             protected Object determineCurrentLookupKey() {
-                return isWriteOperation() ? "master" : "replica";  // Váltás master és replika között
+                String dbKey = isWriteOperation() ? "master" : "replica";  // Váltás master és replika között
+                log.info("Using data source: {}", dbKey);  // Logolják, hogy melyik adatforrás használatos
+                return dbKey;
             }
 
             private boolean isWriteOperation() {

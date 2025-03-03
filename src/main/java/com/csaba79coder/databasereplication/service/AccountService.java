@@ -4,7 +4,8 @@ import com.csaba79coder.databasereplication.controller.exception.AlreadyExistsEx
 import com.csaba79coder.databasereplication.entity.Account;
 import com.csaba79coder.databasereplication.model.AccountRequest;
 import com.csaba79coder.databasereplication.model.AccountResponse;
-import com.csaba79coder.databasereplication.persistence.AccountRepository;
+import com.csaba79coder.databasereplication.persistence.master.AccountMasterRepository;
+import com.csaba79coder.databasereplication.persistence.replica.AccountReplicaRepository;
 import com.csaba79coder.databasereplication.util.Mapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -21,7 +22,8 @@ import static com.csaba79coder.databasereplication.util.Mapper.mapAccountRequest
 @RequiredArgsConstructor
 public class AccountService {
 
-    private final AccountRepository accountRepository;
+    private final AccountMasterRepository accountMasterRepository; // Írási műveletek
+    private final AccountReplicaRepository accountReplicaRepository; // Olvasási műveletek
 
     public AccountResponse createAccount(AccountRequest request) {
         if (request.getName() == null || request.getName().isEmpty()) {
@@ -29,22 +31,27 @@ public class AccountService {
             log.error(message);
             throw new IllegalArgumentException(message);
         }
-        Optional<Account> existingAccount = findAccountByName(request.getName());
+        Optional<Account> existingAccount = findAccountByName(request.getName(), "master"); // Írási művelet
         if (existingAccount.isPresent()) {
             String message = String.format("Account already exists with name: %s", request.getName());
             log.error(message);
             throw new AlreadyExistsException(message);
         }
-        return mapAccountEntityToResponseModel(accountRepository.save(mapAccountRequestModelToEntity(request)));
+        Account savedAccount = accountMasterRepository.save(mapAccountRequestModelToEntity(request)); // Írás
+        return mapAccountEntityToResponseModel(savedAccount);
     }
 
     public List<AccountResponse> findAllAccounts() {
-        return accountRepository.findAll().stream()
+        return accountReplicaRepository.findAll().stream() // Olvasás
                 .map(Mapper::mapAccountEntityToResponseModel)
                 .toList();
     }
 
-    private Optional<Account> findAccountByName(String name) {
-        return accountRepository.findAccountByName(name);
+    private Optional<Account> findAccountByName(String name, String type) {
+        if ("master".equals(type)) {
+            return accountMasterRepository.findAccountByName(name); // Írási adatbázis
+        } else {
+            return accountReplicaRepository.findAccountByName(name); // Olvasási adatbázis
+        }
     }
 }
