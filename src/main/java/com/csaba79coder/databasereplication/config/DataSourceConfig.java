@@ -6,7 +6,11 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
+import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+
 import javax.sql.DataSource;
+import java.util.HashMap;
+import java.util.Map;
 
 @Configuration
 @EnableConfigurationProperties
@@ -47,5 +51,37 @@ public class DataSourceConfig {
         dataSource.setUsername(replicaUsername);
         dataSource.setPassword(replicaPassword);
         return dataSource;
+    }
+
+    @Bean
+    public DataSource routingDataSource() {
+        AbstractRoutingDataSource routingDataSource = new AbstractRoutingDataSource() {
+            @Override
+            protected Object determineCurrentLookupKey() {
+                return isWriteOperation() ? "master" : "replica";  // Váltás master és replika között
+            }
+
+            private boolean isWriteOperation() {
+                // Ha INSERT, UPDATE, DELETE akkor master, ha SELECT akkor replika
+                String currentOperation = getCurrentOperationType();
+                return currentOperation != null && !currentOperation.equals("SELECT");
+            }
+
+            private String getCurrentOperationType() {
+                // Itt implementálhatod a művelet meghatározásának logikáját
+                // Például HTTP kérésből vagy más forrásból is nyerhető információ
+                return "SELECT";  // A logikát itt módosíthatod, hogy a művelet típusát ellenőrizze
+            }
+        };
+
+        // Adatforrások hozzárendelése
+        Map<Object, Object> targetDataSources = new HashMap<>();
+        targetDataSources.put("master", masterDataSource());  // Master adatforrás
+        targetDataSources.put("replica", replicaDataSource());  // Replica adatforrás
+
+        routingDataSource.setTargetDataSources(targetDataSources);  // Target adatforrások beállítása
+        routingDataSource.setDefaultTargetDataSource(masterDataSource());  // Alapértelmezett adatforrás
+
+        return routingDataSource;
     }
 }

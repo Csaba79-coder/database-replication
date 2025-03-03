@@ -32,6 +32,15 @@
                 <role>developer</role>
             </roles>
         </developer>
+        <developer>
+            <id>poczdani</id>
+            <name>Daniel Pocz-Nagy</name>
+            <email>pocz.dani@gmail.com</email>
+            <url>https://github.com/poczdani</url>
+            <roles>
+                <role>developer</role>
+            </roles>
+        </developer>
     </developers>
 
     <scm>
