@@ -22,3 +22,4 @@ public class Account extends Identifier implements Serializable {
     @Column(name = "balance")
     private Double balance = 0.0;
 }
+

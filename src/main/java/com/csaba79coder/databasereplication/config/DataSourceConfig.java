@@ -1,33 +1,43 @@
 package com.csaba79coder.databasereplication.config;
 
+import jakarta.persistence.EntityManagerFactory;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
+import org.springframework.boot.orm.jpa.EntityManagerFactoryBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
+import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.jdbc.datasource.DriverManagerDataSource;
-import org.springframework.jdbc.datasource.lookup.AbstractRoutingDataSource;
+import org.springframework.orm.jpa.JpaTransactionManager;
+import org.springframework.orm.jpa.LocalContainerEntityManagerFactoryBean;
+import org.springframework.transaction.annotation.EnableTransactionManagement;
 
 import javax.sql.DataSource;
 import java.util.HashMap;
 import java.util.Map;
 
 @Configuration
-@EnableConfigurationProperties
+@EnableTransactionManagement
+@EnableJpaRepositories(basePackages = "com.csaba79coder.databasereplication.persistence", entityManagerFactoryRef = "entityManagerFactory")
+@EntityScan(basePackages = "com.csaba79coder.databasereplication.entity")
 @Slf4j
 public class DataSourceConfig {
 
-    @Value("${spring.datasource.url}")
+    @Value("${spring.datasource.master.jdbc-url}")
     private String masterUrl;
 
-    @Value("${spring.datasource.username}")
+    @Value("${spring.datasource.master.username}")
     private String masterUsername;
 
-    @Value("${spring.datasource.password}")
+    @Value("${spring.datasource.master.password}")
     private String masterPassword;
 
-    @Value("${spring.datasource.replica.url}")
+    @Value("${spring.datasource.master.driver-class-name}")
+    private String masterDriverClassName;
+
+    @Value("${spring.datasource.replica.jdbc-url}")
     private String replicaUrl;
 
     @Value("${spring.datasource.replica.username}")
@@ -36,13 +46,32 @@ public class DataSourceConfig {
     @Value("${spring.datasource.replica.password}")
     private String replicaPassword;
 
-    @Bean
+    @Value("${spring.datasource.replica.driver-class-name}")
+    private String replicaDriverClassName;
+
     @Primary
+    @Bean
+    public DataSource routingDataSource() {
+        RoutingDataSource routingDataSource = new RoutingDataSource();
+
+        // Adatforrások hozzárendelése
+        Map<Object, Object> targetDataSources = new HashMap<>();
+        targetDataSources.put("master", masterDataSource());
+        targetDataSources.put("replica", replicaDataSource());
+
+        routingDataSource.setTargetDataSources(targetDataSources);
+        routingDataSource.setDefaultTargetDataSource(masterDataSource());
+
+        return routingDataSource;
+    }
+
+    @Bean
     public DataSource masterDataSource() {
         DriverManagerDataSource dataSource = new DriverManagerDataSource();
         dataSource.setUrl(masterUrl);
         dataSource.setUsername(masterUsername);
         dataSource.setPassword(masterPassword);
+        dataSource.setDriverClassName(masterDriverClassName);
         return dataSource;
     }
 
@@ -52,40 +81,23 @@ public class DataSourceConfig {
         dataSource.setUrl(replicaUrl);
         dataSource.setUsername(replicaUsername);
         dataSource.setPassword(replicaPassword);
+        dataSource.setDriverClassName(replicaDriverClassName);
         return dataSource;
     }
 
     @Bean
-    public DataSource routingDataSource() {
-        AbstractRoutingDataSource routingDataSource = new AbstractRoutingDataSource() {
-            @Override
-            protected Object determineCurrentLookupKey() {
-                String dbKey = isWriteOperation() ? "master" : "replica";  // Váltás master és replika között
-                log.info("Using data source: {}", dbKey);  // Logolják, hogy melyik adatforrás használatos
-                return dbKey;
-            }
+    public LocalContainerEntityManagerFactoryBean entityManagerFactory(EntityManagerFactoryBuilder builder, DataSource routingDataSource) {
+        return builder
+                .dataSource(routingDataSource)
+                .packages("com.csaba79coder.databasereplication.entity")
+                .persistenceUnit("default")
+                .build();
+    }
 
-            private boolean isWriteOperation() {
-                // Ha INSERT, UPDATE, DELETE akkor master, ha SELECT akkor replika
-                String currentOperation = getCurrentOperationType();
-                return currentOperation != null && !currentOperation.equals("SELECT");
-            }
-
-            private String getCurrentOperationType() {
-                // Itt implementálhatod a művelet meghatározásának logikáját
-                // Például HTTP kérésből vagy más forrásból is nyerhető információ
-                return "SELECT";  // A logikát itt módosíthatod, hogy a művelet típusát ellenőrizze
-            }
-        };
-
-        // Adatforrások hozzárendelése
-        Map<Object, Object> targetDataSources = new HashMap<>();
-        targetDataSources.put("master", masterDataSource());  // Master adatforrás
-        targetDataSources.put("replica", replicaDataSource());  // Replica adatforrás
-
-        routingDataSource.setTargetDataSources(targetDataSources);  // Target adatforrások beállítása
-        routingDataSource.setDefaultTargetDataSource(masterDataSource());  // Alapértelmezett adatforrás
-
-        return routingDataSource;
+    @Bean
+    public JpaTransactionManager transactionManager(EntityManagerFactory entityManagerFactory) {
+        JpaTransactionManager transactionManager = new JpaTransactionManager();
+        transactionManager.setEntityManagerFactory(entityManagerFactory);
+        return transactionManager;
     }
 }
